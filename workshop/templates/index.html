@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId      : '',
+      cookie     : true,
+      xfbml      : true,
+      version    : 'v2.11'
+    });
+  };
+
+  (function(d, s, id){
+     var js, fjs = d.getElementsByTagName(s)[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement(s); js.id = id;
+     js.src = "https://connect.facebook.net/en_US/sdk.js";
+     fjs.parentNode.insertBefore(js, fjs);
+   }(document, 'script', 'facebook-jssdk'));
+</script>
+
+<main class="container" style="margin-top: 10px">
+  <form id="verify-form" class="needs-validation" novalidate method="POST" action="/verify/">
+    <div class="form-row">
+      <div class="col-md-4 mb-3">
+        <label for="first-name-input">First name</label>
+        <input type="text" class="form-control" id="first-name-input" placeholder="First name" name="first_name" required>
+        <div class="invalid-feedback">
+          Please provide a valid first name.
+        </div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label for="last-name-input">Last name</label>
+        <input type="text" class="form-control" id="last-name-input" placeholder="Last name" name="last_name" required>
+        <div class="invalid-feedback">
+          Please provide a valid last name.
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="col-md-8 mb-3">
+        <label for="email-input">Email</label>
+        <input type="text" class="form-control" id="email-input" placeholder="Email" name="email" required>
+        <div class="invalid-feedback">
+          Email is required.
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="col-md-8 mb-3">
+        <label for="birthday-input">Birthday</label>
+        <input type="text" class="form-control" id="birthday-input" placeholder="Birthday" name="birthday" required>
+        <div class="invalid-feedback">
+          Birthday is required.
+        </div>
+      </div>
+    </div>
+
+    <button type="button" class="btn btn-primary" id="verify-btn">Verify</button>
+  </form>
+</main>
+{% endblock %}
+
+
+{% block script %}
+<script>
+// Example starter JavaScript for disabling form submissions if there are invalid fields
+(function() {
+  document.getElementById("verify-btn").addEventListener('click', function(event) {
+    var form = document.getElementById('verify-form');
+    if (form.checkValidity() === false) {
+      form.classList.add('was-validated');
+      return false;
+    }
+    FB.getLoginStatus(function(response) {
+      if(response.status === 'connected') {
+        form.submit();
+      }
+      else {
+        FB.login(function(response) {
+          if(response.authResponse) {
+            form.submit();
+          }
+        }, {scope: 'email,user_birthday,user_about_me'});
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}
