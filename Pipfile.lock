@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "c22557246cddf0b6be298ade1fbffd8eeae818a1cd08e579ff6a6878425e99c3"
+            "sha256": "43f654289b4cfef46e6e1828d23f32916dd0494c9b74cbb38b4c46093ae891b0"
         },
         "host-environment-markers": {
             "implementation_name": "cpython",
@@ -57,12 +57,22 @@
             ],
             "version": "==6.7"
         },
+        "facebook-sdk": {
+            "git": "https://github.com/mobolic/facebook-sdk.git"
+        },
         "flask": {
             "hashes": [
                 "sha256:0749df235e3ff61ac108f69ac178c9770caeaccad2509cb762ce1f65570a8856",
                 "sha256:49f44461237b69ecd901cc7ce66feea0319b9158743dd27a2899962ab214dac1"
             ],
             "version": "==0.12.2"
+        },
+        "flask-sqlalchemy": {
+            "hashes": [
+                "sha256:3bc0fac969dd8c0ace01b32060f0c729565293302f0c4269beed154b46bec50b",
+                "sha256:5971b9852b5888655f11db634e87725a9031e170f37c0ce7851cf83497f56e53"
+            ],
+            "version": "==2.3.2"
         },
         "itsdangerous": {
             "hashes": [
@@ -110,6 +120,12 @@
                 "sha256:a22ca993cea2962dbb588f9f30d0015ac4afcc45bee27d3978c0dbe9e97c6c0f"
             ],
             "version": "==2.10.6"
+        },
+        "sqlalchemy": {
+            "hashes": [
+                "sha256:6997507af46b10630e13b605ac278b78885fd683d038896dbee0e7ec41d809d2"
+            ],
+            "version": "==1.2.4"
         },
         "vine": {
             "hashes": [

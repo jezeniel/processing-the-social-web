@@ -13,6 +13,8 @@ name = "pypi"
 
 flask = "*"
 celery = {extras = ["redis"]}
+flask-sqlalchemy = "*"
+facebook-sdk = {git = "https://github.com/mobolic/facebook-sdk.git"}
 
 
 [requires]

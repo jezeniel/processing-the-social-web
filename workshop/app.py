@@ -1,8 +1,11 @@
+import json
 import os
 
-from flask import Flask, render_template
+from facebook import GraphAPI, get_user_from_cookie
+from flask import Flask, jsonify, render_template, request
 
 from .helpers import make_celery
+from .models import Verification, db
 
 
 FB_ID = os.getenv('FB_ID')
@@ -13,10 +16,75 @@ app = Flask(__name__)
 app.config.update(
     CELERY_RESULT_BACKEND='redis://localhost:6379',
     CELERY_BROKER_URL='redis://localhost:6379',
+    SQLALCHEMY_DATABASE_URI='sqlite:///test.db',
 )
+
 celery = make_celery(app)
+db.init_app(app)
+
+
+@celery.task()
+def verify_data(access_token, verification_id):
+    VERIFICATION_ATTR = ['first_name', 'last_name', 'email', 'birthday']
+    print(access_token, verification_id)
+
+    graph = GraphAPI(access_token=access_token, version='2.11')
+    fb_data = graph.get_object(id='me',
+                               fields='first_name,last_name,email,birthday')
+    verification = Verification.query.filter_by(id=verification_id).first()
+
+    result = {}
+    for attr in VERIFICATION_ATTR:
+        result[attr] = getattr(verification, attr) == fb_data[attr]
+    verification.result = json.dumps(result)
+    verification.fb_data = json.dumps(fb_data)
+
+    db.session.add(verification)
+    db.session.commit()
 
 
 @app.route('/')
 def home():
     return render_template('index.html')
+
+
+@app.route('/verify/', methods=['POST'])
+def verify():
+    result = get_user_from_cookie(
+        cookies=request.cookies, app_id=FB_ID, app_secret=FB_SECRET
+    )
+    data = request.form
+    verification = Verification(
+        first_name=data['first_name'],
+        last_name=data['last_name'],
+        email=data['email'],
+        birthday=data['birthday'],
+    )
+
+    db.session.add(verification)
+    db.session.commit()
+
+    verify_data.delay(result['access_token'], verification.id)
+    return render_template('success.html', verification_id=verification.id)
+
+
+@app.route('/verifications/<id>/')
+def verifications(id):
+    verification = Verification.query.filter_by(id=id).first()
+    result = {
+        'application_data': {
+            'first_name': verification.first_name,
+            'last_name': verification.last_name,
+            'email': verification.email,
+            'birthday': verification.birthday,
+        },
+        'fb_data': json.loads(verification.fb_data),
+        'result': json.loads(verification.result)
+    }
+    return jsonify(result)
+
+
+@app.route('/db/create')
+def db_create():
+    db.create_all()
+    return 'ok'
