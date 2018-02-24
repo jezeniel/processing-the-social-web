@@ -12,10 +12,10 @@ name = "pypi"
 [packages]
 
 flask = "*"
-celery = {extras = ["redis"]}
 flask-sqlalchemy = "*"
 facebook-sdk = {git = "https://github.com/mobolic/facebook-sdk.git"}
 requests = "*"
+celery = {extras = ["redis"], version = "==3.1.25"}
 
 
 [requires]
