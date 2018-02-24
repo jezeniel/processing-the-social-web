@@ -12,10 +12,11 @@ class Verification(db.Model):
     birthday = db.Column(db.String(255), nullable=False)
     id_image = db.Column(db.String(255), nullable=False)
 
-    fb_task_id = db.Column(db.String(255), nullable=True)
+    fb_picture = db.Column(db.Text, nullable=True)
     fb_data = db.Column(db.Text, nullable=True)
     fb_result = db.Column(db.Text, nullable=True)
 
-    ocr_task_id = db.Column(db.String(255), nullable=True)
     ocr_result = db.Column(db.Text, nullable=True)
     ocr_data = db.Column(db.Text, nullable=True)
+
+    face_verify_result = db.Column(db.Text, nullable=True)

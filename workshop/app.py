@@ -2,6 +2,7 @@ import json
 import os
 import requests
 
+from celery import chain
 from facebook import GraphAPI, get_user_from_cookie
 from flask import Flask, jsonify, render_template, request
 
@@ -12,6 +13,7 @@ from .models import Verification, db
 FB_ID = os.getenv('FB_ID')
 FB_SECRET = os.getenv('FB_SECRET')
 OCR_KEY = os.getenv('OCR_KEY')
+FACE_KEY = os.getenv('FACE_KEY')
 
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_PATH, 'media/')
@@ -29,6 +31,47 @@ db.init_app(app)
 
 
 @celery.task()
+def verify_photo(verification_id):
+    verification = Verification.query.filter_by(id=verification_id).first()
+    base_url = 'https://westcentralus.api.cognitive.microsoft.com/face/v1.0/'
+    detect_url = base_url + 'detect'
+    verify_url = base_url + 'verify'
+    fileup_headers = {
+        'Ocp-Apim-Subscription-Key': FACE_KEY,
+        'Content-Type': 'application/octet-stream'
+    }
+    headers = {
+        'Ocp-Apim-Subscription-Key': FACE_KEY,
+    }
+
+    with open(verification.id_image, 'rb') as f:
+        id_face = requests.post(detect_url, headers=fileup_headers, data=f).json()
+
+    with open(verification.fb_picture, 'rb') as f:
+        fb_face = requests.post(detect_url, headers=fileup_headers, data=f).json()
+
+    result = {
+        'id_face': id_face,
+        'fb_face': fb_face,
+        'verify': None
+    }
+
+    print(id_face, fb_face)
+    if id_face and fb_face:
+        data = {
+            'faceId1': id_face[0]['faceId'],
+            'faceId2': fb_face[0]['faceId'],
+        }
+        resp = requests.post(verify_url, headers=headers, json=data).json()
+        result['verify'] = resp
+
+    verification.face_verify_result = json.dumps(result)
+
+    db.session.add(verification)
+    db.session.commit()
+
+
+@celery.task()
 def verify_data(access_token, verification_id):
     VERIFICATION_ATTR = ['first_name', 'last_name', 'email', 'birthday']
 
@@ -43,8 +86,17 @@ def verify_data(access_token, verification_id):
     verification.fb_result = json.dumps(result)
     verification.fb_data = json.dumps(fb_data)
 
+    fb_picture = graph.get_object(id='me/picture', type='large')
+    filename = '{}/fb_pic_{}.jpg'.format(UPLOAD_FOLDER, verification_id)
+    with open(filename, 'wb') as f:
+        f.write(fb_picture['data'])
+
+    verification.fb_picture = filename
+
     db.session.add(verification)
     db.session.commit()
+
+    return verification_id
 
 
 @celery.task()
@@ -103,7 +155,7 @@ def verify():
     )
     data = request.form
     file = request.files['identification']
-    file_path = save_file(file)
+    file_path = save_file(file, app.config['UPLOAD_FOLDER'])
 
     verification = Verification(
         first_name=data['first_name'],
@@ -116,7 +168,10 @@ def verify():
     db.session.add(verification)
     db.session.flush()  # just to get the id
 
-    verify_data.delay(result['access_token'], verification.id)
+    chain(
+        verify_data.s(result['access_token'], verification.id),
+        verify_photo.s()
+    )()
     ocr_data.delay(verification.id)
 
     db.session.commit()
@@ -135,12 +190,16 @@ def verifications(id):
         },
         'fb_data': json.loads(verification.fb_data),
         'fb_result': None,
-        'ocr_result': None
+        'ocr_result': None,
+        'face_verify_result': None
     }
     if verification.fb_result:
         result['fb_result'] = json.loads(verification.fb_result)
     if verification.ocr_result:
         result['ocr_result'] = json.loads(verification.ocr_result)
+    if verification.face_verify_result:
+        result['face_verify_result'] = json.loads(verification.face_verify_result)
+
     return jsonify(result)
 
 
