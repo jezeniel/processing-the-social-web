@@ -48,8 +48,8 @@ def levenshtein(s1, s2):
     for i, c1 in enumerate(s1):
         current_row = [i + 1]
         for j, c2 in enumerate(s2):
-            insertions = previous_row[j + 1] + 1 # j+1 instead of j since previous_row and current_row are one character longer
-            deletions = current_row[j] + 1       # than s2
+            insertions = previous_row[j + 1] + 1
+            deletions = current_row[j] + 1
             substitutions = previous_row[j] + (c1 != c2)
             current_row.append(min(insertions, deletions, substitutions))
         previous_row = current_row
@@ -58,23 +58,19 @@ def levenshtein(s1, s2):
 
 
 def find_closest(text, words):
-
     closest_distance = None
     closest_word = None
     for word in words:
         distance = levenshtein(text.lower(), word.lower())
-        if closest_distance is None:
-            closest_distance = distance
-        if closest_distance > distance:
+        if closest_distance is None or closest_distance > distance:
             closest_distance = distance
             closest_word = word
-    return closest_word, closest_distance
+    return {'word': closest_word, 'distance': closest_distance}
 
 
 @celery.task()
 def verify_data(access_token, verification_id):
     VERIFICATION_ATTR = ['first_name', 'last_name', 'email', 'birthday']
-    print(access_token, verification_id)
 
     graph = GraphAPI(access_token=access_token, version='2.11')
     fb_data = graph.get_object(id='me',
@@ -84,7 +80,7 @@ def verify_data(access_token, verification_id):
     result = {}
     for attr in VERIFICATION_ATTR:
         result[attr] = getattr(verification, attr) == fb_data[attr]
-    verification.result = json.dumps(result)
+    verification.fb_result = json.dumps(result)
     verification.fb_data = json.dumps(fb_data)
 
     db.session.add(verification)
@@ -113,11 +109,19 @@ def ocr_data(verification_id):
                 words.append(word['text'])
 
     print(words)
-    closest_fname, fname_distance = find_closest(verification.first_name, words)
-    closest_lname, lname_distance = find_closest(verification.last_name, words)
+    fname_closest = find_closest(verification.first_name, words)
+    lname_closest = find_closest(verification.last_name, words)
     result = {
-            'first_name': {'text': verification.first_name, 'closest': closest_fname, 'distance': fname_distance},
-            'last_name': {'text': verification.last_name, 'closest': closest_lname, 'distance': lname_distance},
+            'first_name': {
+                'text': verification.first_name,
+                'closest': fname_closest['word'],
+                'distance': fname_closest['distance']
+            },
+            'last_name': {
+                'text': verification.last_name,
+                'closest': lname_closest['word'],
+                'distance': lname_closest['distance']
+            },
     }
 
     verification.ocr_data = json.dumps(data)
@@ -150,10 +154,12 @@ def verify():
     )
 
     db.session.add(verification)
-    db.session.commit()
+    db.session.flush()  # just to get the id
 
     verify_data.delay(result['access_token'], verification.id)
     ocr_data.delay(verification.id)
+
+    db.session.commit()
     return render_template('success.html', verification_id=verification.id)
 
 
@@ -168,9 +174,13 @@ def verifications(id):
             'birthday': verification.birthday,
         },
         'fb_data': json.loads(verification.fb_data),
-        'result': json.loads(verification.result),
-        'ocr_result': json.loads(verification.ocr_result)
+        'fb_result': None,
+        'ocr_result': None
     }
+    if verification.fb_result:
+        result['fb_result'] = json.loads(verification.fb_result)
+    if verification.ocr_result:
+        result['ocr_result'] = json.loads(verification.ocr_result)
     return jsonify(result)
 
 
