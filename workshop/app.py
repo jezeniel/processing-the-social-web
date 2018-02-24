@@ -73,6 +73,7 @@ def verify_photo(verification_id):
 
 @celery.task()
 def verify_data(access_token, verification_id):
+    print('VERIFY {}', verification_id)
     VERIFICATION_ATTR = ['first_name', 'last_name', 'email', 'birthday']
 
     graph = GraphAPI(access_token=access_token, version='2.11')
@@ -104,14 +105,17 @@ def ocr_data(verification_id):
     print("OCR {}".format(verification_id))
     base_url = 'https://westcentralus.api.cognitive.microsoft.com/vision/v1.0/'
     ocr_url = base_url + 'ocr'
-    headers = {'Ocp-Apim-Subscription-Key': OCR_KEY}
+    headers = {
+        'Ocp-Apim-Subscription-Key': OCR_KEY,
+        'Content-Type': 'application/octet-stream'
+    }
     params = {'language': 'en'}
 
     verification = Verification.query.filter_by(id=verification_id).first()
 
-    files = {'file': open(verification.id_image, 'rb')}
-    response = requests.post(ocr_url, params=params, headers=headers,
-                             files=files)
+    with open(verification.id_image, 'rb') as f:
+        response = requests.post(ocr_url, params=params, headers=headers,
+                                 data=f)
 
     data = response.json()
     words = []
