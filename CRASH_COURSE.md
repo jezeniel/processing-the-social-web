@@ -98,6 +98,7 @@ def add_api(a, b):
 
 ```python
 from celery import Celery
+from celery.result import AsyncResult
 from flask import Flask, jsonify, request, render_template
 
 
