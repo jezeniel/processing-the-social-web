@@ -18,5 +18,3 @@ class Verification(db.Model):
 
     ocr_result = db.Column(db.Text, nullable=True)
     ocr_data = db.Column(db.Text, nullable=True)
-
-    face_verify_result = db.Column(db.Text, nullable=True)
