@@ -10,7 +10,6 @@ class Verification(db.Model):
     last_name = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), nullable=False)
     birthday = db.Column(db.String(255), nullable=False)
-    id_image = db.Column(db.String(255), nullable=False)
 
     fb_picture = db.Column(db.Text, nullable=True)
     fb_data = db.Column(db.Text, nullable=True)

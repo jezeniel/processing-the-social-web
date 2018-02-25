@@ -21,7 +21,7 @@
 </script>
 
 <main class="container" style="margin-top: 10px">
-  <form id="verify-form" class="needs-validation" novalidate method="POST" action="/verify/" enctype="multipart/form-data">
+  <form id="verify-form" class="needs-validation" novalidate method="POST" action="/verify/">
     <div class="form-row">
       <div class="col-md-4 mb-3">
         <label for="first-name-input">First name</label>
@@ -55,16 +55,6 @@
         <input type="text" class="form-control" id="birthday-input" placeholder="Birthday" name="birthday" required>
         <div class="invalid-feedback">
           Birthday is required.
-        </div>
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="col-md-8 mb-3">
-        <label for="id-input">ID</label>
-        <input type="file" class="form-control" id="id-input" placeholder="ID" name="identification" required>
-        <div class="invalid-feedback">
-          ID is required.
         </div>
       </div>
     </div>
