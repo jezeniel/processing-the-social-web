@@ -1,7 +1,5 @@
-import json
 import os
 
-from facebook import GraphAPI, get_user_from_cookie
 from flask import Flask, jsonify, render_template, request
 
 from .helpers import make_celery
@@ -26,28 +24,6 @@ celery = make_celery(app)
 db.init_app(app)
 
 
-@celery.task()
-def verify_data(access_token, verification_id):
-    print('VERIFY {}', verification_id)
-    VERIFICATION_ATTR = ['first_name', 'last_name', 'email', 'birthday']
-
-    graph = GraphAPI(access_token=access_token, version='2.11')
-    fb_data = graph.get_object(id='me',
-                               fields='first_name,last_name,email,birthday')
-    verification = Verification.query.filter_by(id=verification_id).first()
-
-    result = {}
-    for attr in VERIFICATION_ATTR:
-        result[attr] = getattr(verification, attr) == fb_data[attr]
-    verification.fb_result = json.dumps(result)
-    verification.fb_data = json.dumps(fb_data)
-
-    db.session.add(verification)
-    db.session.commit()
-
-    return verification_id
-
-
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -55,9 +31,6 @@ def home():
 
 @app.route('/verify/', methods=['POST'])
 def verify():
-    result = get_user_from_cookie(
-        cookies=request.cookies, app_id=FB_ID, app_secret=FB_SECRET
-    )
     data = request.form
 
     verification = Verification(
@@ -68,10 +41,6 @@ def verify():
     )
 
     db.session.add(verification)
-    db.session.flush()  # just to get the id
-
-    verify_data.delay(result['access_token'], verification.id)
-
     db.session.commit()
     return render_template('success.html', verification_id=verification.id)
 
@@ -86,12 +55,7 @@ def verifications(id):
             'email': verification.email,
             'birthday': verification.birthday,
         },
-        'fb_data': json.loads(verification.fb_data),
-        'fb_result': None,
     }
-    if verification.fb_result:
-        result['fb_result'] = json.loads(verification.fb_result)
-
     return jsonify(result)
 
 
