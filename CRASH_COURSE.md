@@ -88,7 +88,7 @@ def api():
     return jsonify(request_body=data)
 
 
-@app.route('/api/add/<a>/<b>/')
+@app.route('/api/add/<int:a>/<int:b>/')
 def add_api(a, b):
     result = add.delay(a, b)
     return jsonify({'result': result.get()})
@@ -148,7 +148,7 @@ def api():
 
 
 ## We changed the api above
-@app.route('/api/add/<a>/<b>/')
+@app.route('/api/add/<int:a>/<int:b>/')
 def add_api(a, b):
     result = add.delay(a, b)
     return jsonify({'task_id': result.id})
