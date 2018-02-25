@@ -44,13 +44,6 @@ def verify_data(access_token, verification_id):
     verification.fb_result = json.dumps(result)
     verification.fb_data = json.dumps(fb_data)
 
-    fb_picture = graph.get_object(id='me/picture', type='large')
-    filename = '{}/fb_pic_{}.jpg'.format(UPLOAD_FOLDER, verification_id)
-    with open(filename, 'wb') as f:
-        f.write(fb_picture['data'])
-
-    verification.fb_picture = filename
-
     db.session.add(verification)
     db.session.commit()
 
