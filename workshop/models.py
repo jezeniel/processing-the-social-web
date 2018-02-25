@@ -14,8 +14,3 @@ class Verification(db.Model):
     fb_picture = db.Column(db.Text, nullable=True)
     fb_data = db.Column(db.Text, nullable=True)
     fb_result = db.Column(db.Text, nullable=True)
-
-    ocr_result = db.Column(db.Text, nullable=True)
-    ocr_data = db.Column(db.Text, nullable=True)
-
-    face_verify_result = db.Column(db.Text, nullable=True)

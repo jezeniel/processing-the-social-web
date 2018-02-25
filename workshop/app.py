@@ -11,15 +11,11 @@ from .models import Verification, db
 FB_ID = os.getenv('FB_ID')
 FB_SECRET = os.getenv('FB_SECRET')
 
-BASE_PATH = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_FOLDER = os.path.join(BASE_PATH, 'media/')
-
 app = Flask(__name__)
 app.config.update(
     CELERY_RESULT_BACKEND='redis://localhost:6379',
     CELERY_BROKER_URL='redis://localhost:6379',
     SQLALCHEMY_DATABASE_URI='sqlite:///test.db',
-    UPLOAD_FOLDER=UPLOAD_FOLDER
 )
 
 celery = make_celery(app)
